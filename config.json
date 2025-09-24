@@ -1,0 +1,105 @@
+{
+  "default_settings": {
+    "radius": 5000,
+    "min_rating": 0.0,
+    "sort_by_distance": true,
+    "max_results_display": 20
+  },
+  "api_settings": {
+    "rate_limit_delay": 0.5,
+    "page_token_delay": 2.0,
+    "max_retries": 3
+  },
+  "keywords": {
+    "default": [
+      "charity",
+      "NGO",
+      "food bank",
+      "shelter",
+      "orphanage",
+      "donation center",
+      "blood bank",
+      "homeless shelter",
+      "soup kitchen",
+      "community center",
+      "nonprofit organization",
+      "animal shelter",
+      "salvation army",
+      "red cross"
+    ],
+    "emergency_services": [
+      "emergency shelter",
+      "disaster relief",
+      "crisis center",
+      "emergency food",
+      "humanitarian aid"
+    ],
+    "healthcare": [
+      "blood bank",
+      "blood donation",
+      "medical clinic",
+      "free clinic",
+      "health center"
+    ],
+    "food_assistance": [
+      "food bank",
+      "soup kitchen",
+      "food pantry",
+      "meals on wheels",
+      "community kitchen"
+    ],
+    "housing": [
+      "homeless shelter",
+      "transitional housing",
+      "housing assistance",
+      "women's shelter",
+      "family shelter"
+    ],
+    "animal_welfare": [
+      "animal shelter",
+      "animal rescue",
+      "SPCA",
+      "humane society",
+      "pet adoption"
+    ]
+  },
+  "output_settings": {
+    "json_filename": "donation_opportunities.json",
+    "csv_filename": "donation_opportunities.csv",
+    "include_closed": false,
+    "include_unrated": true
+  },
+  "email_settings": {
+    "enabled": true,
+    "recipient": "cliqueadmin@helpables.org",
+    "sender": "Donation Finder System",
+    "subject_template": "Donation Opportunities Found - {search_type}",
+    "api_type": "gmail_api",
+    "gmail_api": {
+      "scopes": [
+        "https://www.googleapis.com/auth/gmail.send"
+      ],
+      "credentials_file": "credentials.json",
+      "token_file": "token.json"
+    }
+  },
+  "zip_codes": {
+    "description": "Configure zip codes for quick searches. Add your local zip codes here.",
+    "enabled_zip_codes": [
+      "98004",
+      "98074",
+      "98005"
+    ],
+    "geocoding_settings": {
+      "country_code": "US",
+      "cache_coordinates": true,
+      "use_google_geocoding": true
+    },
+    "batch_search_settings": {
+      "max_concurrent_searches": 3,
+      "delay_between_zip_searches": 2.0,
+      "combine_nearby_results": true,
+      "deduplication_radius": 1000
+    }
+  }
+}
