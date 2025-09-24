@@ -226,17 +226,26 @@ def main():
             finder = SimpleZipCodeFinder(api_key)
             places = finder.search_by_zip(args.zip, keywords, args.max_results, args.radius)
             
-            # Enhance with reviews if requested
-            if places and args.include_reviews:
-                print(f"\n🔍 Fetching detailed reviews for {len(places)} places...")
+            if places:
                 donation_finder = DonationFinderNew(api_key)
-                places = donation_finder.enhance_places_with_reviews(
-                    places, 
-                    max_reviews=args.max_reviews,
-                    include_all=args.reviews_for_all
-                )
-                # Show API usage statistics
-                print(f"\n📊 API Usage Summary: {donation_finder.total_api_calls} total Google Places API calls made")
+                
+                # Extract emails if email flag is used
+                if args.email:
+                    print(f"\n� Email extraction requested - fetching contact details...")
+                    places = donation_finder.enhance_places_with_emails(places)
+                
+                # Enhance with reviews if requested (separate from email extraction)
+                if args.include_reviews:
+                    print(f"\n📝 Review enhancement requested - fetching detailed reviews...")
+                    places = donation_finder.enhance_places_with_reviews(
+                        places, 
+                        max_reviews=args.max_reviews,
+                        include_all=args.reviews_for_all
+                    )
+                
+                # Show API usage statistics if any enhancements were done
+                if args.email or args.include_reviews:
+                    print(f"\n📊 API Usage Summary: {donation_finder.total_api_calls} total Google Places API calls made")
             
             if places:
                 print_results(places, args.quiet, args.include_reviews)
@@ -274,17 +283,26 @@ def main():
             for zip_code, places in all_results.items():
                 all_places.extend(places)
             
-            # Enhance with reviews if requested
-            if all_places and args.include_reviews:
-                print(f"\n🔍 Fetching detailed reviews for {len(all_places)} places from batch search...")
+            if all_places:
                 donation_finder = DonationFinderNew(api_key)
-                all_places = donation_finder.enhance_places_with_reviews(
-                    all_places, 
-                    max_reviews=args.max_reviews,
-                    include_all=args.reviews_for_all
-                )
-                # Show API usage statistics
-                print(f"\n📊 API Usage Summary: {donation_finder.total_api_calls} total Google Places API calls made")
+                
+                # Extract emails if email flag is used
+                if args.email:
+                    print(f"\n� Email extraction requested - fetching contact details for batch results...")
+                    all_places = donation_finder.enhance_places_with_emails(all_places)
+                
+                # Enhance with reviews if requested (separate from email extraction)
+                if args.include_reviews:
+                    print(f"\n📝 Review enhancement requested - fetching detailed reviews for batch results...")
+                    all_places = donation_finder.enhance_places_with_reviews(
+                        all_places, 
+                        max_reviews=args.max_reviews,
+                        include_all=args.reviews_for_all
+                    )
+                
+                # Show API usage statistics if any enhancements were done
+                if args.email or args.include_reviews:
+                    print(f"\n📊 API Usage Summary: {donation_finder.total_api_calls} total Google Places API calls made")
             
             if all_places:
                 print(f"\n🎯 Combined results from all ZIP codes:")
@@ -329,15 +347,22 @@ def main():
                 processed_places = finder.process_places(unique_places, args.lat, args.lng)
                 final_places = processed_places[:args.max_results]
                 
-                # Enhance with reviews if requested
+                # Extract emails if email flag is used
+                if args.email:
+                    print(f"\n📧 Email extraction requested - fetching contact details for coordinate results...")
+                    final_places = finder.enhance_places_with_emails(final_places)
+                
+                # Enhance with reviews if requested (separate from email extraction)
                 if args.include_reviews:
-                    print(f"\n🔍 Fetching detailed reviews for {len(final_places)} places...")
+                    print(f"\n� Review enhancement requested - fetching detailed reviews for coordinate results...")
                     final_places = finder.enhance_places_with_reviews(
                         final_places, 
                         max_reviews=args.max_reviews,
                         include_all=args.reviews_for_all
                     )
-                    # Show API usage statistics
+                
+                # Show API usage statistics if any enhancements were done
+                if args.email or args.include_reviews:
                     print(f"\n📊 API Usage Summary: {finder.total_api_calls} total Google Places API calls made")
                 
                 print_results(final_places, args.quiet, args.include_reviews)

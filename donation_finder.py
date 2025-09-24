@@ -296,20 +296,8 @@ class DonationFinderNew:
                 if 'weekdayDescriptions' in hours:
                     opening_hours = hours['weekdayDescriptions']
             
-            # Extract website URL for email extraction
+            # Extract website URL (but don't extract email here - that's done separately)
             website_url = place_data.get('websiteUri', '')
-            
-            # Try to extract email from website (with rate limiting)
-            email = ''
-            if website_url:
-                print(f"  🔍 Extracting email from website: {website_url}")
-                email = self.extract_email_from_website(website_url)
-                if email:
-                    print(f"  ✅ Found email: {email}")
-                else:
-                    print(f"  ❌ No email found")
-                # Add a delay to be respectful to websites
-                time.sleep(self.EMAIL_SCRAPE_DELAY)
             
             return {
                 'place_id': place_data.get('id', place_id),
@@ -321,7 +309,7 @@ class DonationFinderNew:
                 'opening_hours': opening_hours,
                 'phone': place_data.get('internationalPhoneNumber', ''),
                 'website': place_data.get('websiteUri', ''),
-                'email': email,
+                'email': '',  # Email extraction moved to separate method
                 'business_status': place_data.get('businessStatus', 'UNKNOWN'),
                 'photos_available': len(place_data.get('photos', [])),
                 'review_count': len(reviews)
@@ -335,6 +323,126 @@ class DonationFinderNew:
             return {'error': f"JSON decode error: {e}"}
         except Exception as e:
             print(f"Unexpected error fetching place details: {e}")
+            return {'error': f"Unexpected error: {e}"}
+    
+    def enhance_places_with_emails(self, places: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Enhance places list with email addresses extracted from their websites
+        
+        Args:
+            places: List of places from search results
+            
+        Returns:
+            Enhanced list of places with email addresses
+        """
+        enhanced_places = []
+        
+        print(f"\n📧 Extracting email addresses for {len(places)} places...")
+        
+        for i, place in enumerate(places):
+            print(f"Processing {i+1}/{len(places)}: {place.get('name', 'Unknown')}")
+            
+            place_id = place.get('id') or place.get('place_id')
+            if not place_id:
+                print(f"  No place_id found for {place.get('name', 'Unknown')}")
+                enhanced_place = place.copy()
+                enhanced_place['email'] = ''
+                enhanced_place['website'] = ''
+                enhanced_place['phone'] = ''
+                enhanced_places.append(enhanced_place)
+                continue
+            
+            # Get basic place details for website URL
+            details = self._get_basic_place_details(place_id)
+            
+            if 'error' in details:
+                print(f"  Error fetching details: {details['error']}")
+                enhanced_place = place.copy()
+                enhanced_place['email'] = ''
+                enhanced_place['website'] = ''
+                enhanced_place['phone'] = ''
+                enhanced_places.append(enhanced_place)
+                continue
+            
+            # Merge original place data with contact information
+            enhanced_place = place.copy()
+            enhanced_place.update({
+                'email': details.get('email', ''),
+                'website': details.get('website', ''),
+                'phone': details.get('phone', ''),
+                'business_status': details.get('business_status', 'UNKNOWN'),
+                'email_extracted': True
+            })
+            
+            email_status = "✅ Found" if details.get('email') else "❌ Not found"
+            print(f"  📧 Email: {email_status}")
+            enhanced_places.append(enhanced_place)
+        
+        print(f"📧 Email extraction completed for {len(enhanced_places)} places")
+        return enhanced_places
+    
+    def _get_basic_place_details(self, place_id: str) -> Dict[str, Any]:
+        """
+        Get basic place details including website and phone for email extraction
+        
+        Args:
+            place_id: Google Places place ID
+            
+        Returns:
+            Dictionary containing basic place details
+        """
+        # Define minimal fields we need for email extraction
+        field_mask = "id,displayName,formattedAddress,internationalPhoneNumber,websiteUri,businessStatus"
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': self.api_key,
+            'X-Goog-FieldMask': field_mask
+        }
+        
+        url = self.PLACE_DETAILS_URL.format(place_id=place_id)
+        
+        # Enforce rate limiting before making the API call
+        self._enforce_rate_limit('details')
+        
+        try:
+            print(f"  🔍 Fetching contact details for place: {place_id}")
+            response = self.session.get(url, headers=headers)
+            response.raise_for_status()
+            place_data = response.json()
+            
+            # Extract website URL for email extraction
+            website_url = place_data.get('websiteUri', '')
+            
+            # Try to extract email from website (with rate limiting)
+            email = ''
+            if website_url:
+                print(f"    🌐 Checking website: {website_url}")
+                email = self.extract_email_from_website(website_url)
+                if email:
+                    print(f"    ✅ Found email: {email}")
+                else:
+                    print(f"    ❌ No email found on website")
+                # Add a delay to be respectful to websites
+                time.sleep(self.EMAIL_SCRAPE_DELAY)
+            
+            return {
+                'place_id': place_data.get('id', place_id),
+                'name': place_data.get('displayName', {}).get('text', ''),
+                'phone': place_data.get('internationalPhoneNumber', ''),
+                'website': place_data.get('websiteUri', ''),
+                'email': email,
+                'business_status': place_data.get('businessStatus', 'UNKNOWN')
+            }
+            
+        except requests.exceptions.RequestException as e:
+            print(f"  Request error fetching place details: {e}")
+            return {'error': f"Request error: {e}"}
+        except json.JSONDecodeError as e:
+            print(f"  JSON decode error fetching place details: {e}")
+            return {'error': f"JSON decode error: {e}"}
+        except Exception as e:
+            print(f"  Unexpected error fetching place details: {e}")
             return {'error': f"Unexpected error: {e}"}
     
     def enhance_places_with_reviews(self, places: List[Dict[str, Any]], max_reviews: int = 3, include_all: bool = False) -> List[Dict[str, Any]]:

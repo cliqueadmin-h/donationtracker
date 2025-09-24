@@ -51,7 +51,7 @@ jobs:
         KEYWORDS="${{ github.event.inputs.keywords || 'charity,food bank,shelter' }}"
         MAX_RESULTS="${{ github.event.inputs.max_results || '10' }}"
         
-        python cli.py --zip-batch --keywords "$KEYWORDS" --max-results $MAX_RESULTS --include-reviews --email --quiet
+        python cli.py --zip-batch --keywords "$KEYWORDS" --max-results $MAX_RESULTS --email --quiet
         
     - name: Upload results as artifacts
       uses: actions/upload-artifact@v4
